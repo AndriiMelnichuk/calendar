@@ -36,11 +36,10 @@ def process_message(ch, method, properties, body):
 
 
 def start_consumer(queue_name):
-    host = 'localhost'
     connection = pika.BlockingConnection(
         pika.ConnectionParameters(
             'rabbitmq',
-            # host, 
+            # 'localhost',
             5672,   # RabbitMQ port
             '/',    # Virtual host
             pika.PlainCredentials('admin', 'password')
