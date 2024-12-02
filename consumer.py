@@ -1,6 +1,6 @@
 import pika
 import json
-from googleHelper import add_event
+from googleHelper import add_event, is_at_google
 
 
 def process_message(ch, method, properties, body):
@@ -14,7 +14,10 @@ def process_message(ch, method, properties, body):
             # TODO  Добавить генерацию и запрос к сервису.
         }
     elif message['type'] == 'add_event_to_calendar':
-        add_event(message['access_token'], message)
+        add_event(message, message['access_token'])
+    elif message['type'] == 'is_event_at_calendar':
+        response = is_at_google(message, message['access_token'])
+
 
     
     if properties.reply_to:
