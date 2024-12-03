@@ -4,13 +4,10 @@ import os
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
 
-
 load_dotenv()
 
 CLIENT_ID = os.getenv('CLIENT_ID')
 CLIENT_SECRET = os.getenv('CLIENT_SECRET')
-
-
 
 
 def day_and_next(date_string):
@@ -24,6 +21,7 @@ def day_and_next(date_string):
     new_date_object = date_object + timedelta(days=1)
     new_date_string = new_date_object.strftime("%Y-%m-%d")
     return date_string, new_date_string
+
 
 def day_and_next_utc(date_string):
     if '2099' in date_string:
@@ -43,37 +41,6 @@ def day_and_next_utc(date_string):
     new_date_string_utc = new_date_object.strftime("%Y-%m-%dT%H:%M:%S") + 'Z'
     
     return date_string_utc, new_date_string_utc
-
-def get_oauth():
-    auth_url = 'https://accounts.google.com/o/oauth2/v2/auth'
-    params = {
-        'nonce' : 'nonce',
-        'client_id': CLIENT_ID,
-        'redirect_uri': 'http://localhost:5000',
-        'response_type': 'id_token code',
-        'scope': 'https://www.googleapis.com/auth/calendar.events',
-        'access_type': 'offline'
-    }
-    print(f'Перейдите по ссылке для авторизации: {auth_url}?{urllib.parse.urlencode(params)}')
-
-
-def oauth2accces_token(autorisation_code):
-    token_url = 'https://oauth2.googleapis.com/token'
-    data = {
-        'code': autorisation_code,  # Код из URL
-        'client_id': CLIENT_ID,
-        'client_secret': CLIENT_SECRET,
-        'redirect_uri': 'http://localhost:5000',
-        'grant_type': 'authorization_code',
-    }
-
-    response = requests.post(token_url, data=data)
-    if response.ok:
-        tokens = response.json()
-        access_token = tokens.get('access_token')
-        print('Access Token:', access_token)
-    else:
-        print('Error:', response.json())
 
 
 def add_event(data, access_token):
@@ -111,38 +78,58 @@ def add_event(data, access_token):
         print('Ошибка:', response.json())
 
 
-def is_at_google(task, access_token):
-        # Задаем URL для получения событий из календаря
+def delete_event(data, access_token):
+    if is_at_google(data, access_token):
+        events = get_tasks_from_google(data, access_token)
+        event_id = 0
+        for event in events:
+            ev_des = event['description'] if 'description' in event.keys() else ''
+            if event['summary'] == data['title'] and ev_des == data['description']:
+                event_id = event['id']
+        url = f'https://www.googleapis.com/calendar/v3/calendars/primary/events/{event_id}'
+        headers = {
+            'Authorization': f'Bearer {access_token}',
+        }
+        response = requests.delete(url, headers=headers)
+
+        if response.status_code == 204:
+            print("INFO: DELETE success.")
+        else:
+            print(f"ERROR: DELETE failed {response.status_code} - {response.text}")
+    else:
+        print('INFO: Task absent to delete')
+
+
+def get_tasks_from_google(task, access_token):
     url = 'https://www.googleapis.com/calendar/v3/calendars/primary/events'
     date_string = task['date']
     date_string, new_date_string = day_and_next_utc(date_string)    
-    # Устанавливаем параметры запроса (ищем события на определенную дату)
     params = {
-        'timeMin': date_string,  # Начало дня в UTC
-        'timeMax': new_date_string,  # Конец дня в UTC
-        'singleEvents': 'true',  # Получать все события, включая повторяющиеся
-        'orderBy': 'startTime',  # Сортировать по времени начала
+        'timeMin': date_string,
+        'timeMax': new_date_string,
+        'singleEvents': 'true',  
+        'orderBy': 'startTime',  
     }
 
-    # Устанавливаем заголовки с авторизацией
     headers = {
-        'Authorization': f'Bearer {access_token}',  # Ваш токен доступа
+        'Authorization': f'Bearer {access_token}',
     }
 
-    # Отправляем GET запрос
     response = requests.get(url, headers=headers, params=params)
     
-    # Проверяем статус ответа
     if response.status_code != 200:
         raise Exception(f"Error fetching events: {response.status_code} - {response.text}")
 
-    # Получаем список событий из ответа
     events = response.json().get('items', [])
+    return events
 
-    # Проверяем, есть ли событие с нужным summary
+
+def is_at_google(task, access_token):
+    events = get_tasks_from_google(task, access_token)
     for event in events:
-        if event['summary'] == task['title'] and event['description'] == task['description']:
-            return True  # Событие найдено
-    
-    return False  # Событие не найдено
+        ev_des = event['description'] if 'description' in event.keys() else ''
+        if event['summary'] == task['title'] and ev_des == task['description']:
+            return True
+    return False 
+
 

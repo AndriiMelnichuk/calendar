@@ -54,3 +54,22 @@ return_type {
 }
 
 ```
+
+## Delete event
+``` shelloo
+curl -X POST http://localhost:5010/ -H "Content-Type: application/json" -d '{
+    "type": "delete_task",
+    "access_token": "token",
+    "id": ["id0", ...],
+    "title": ["name0", ...],
+    "description": ["desc0", ...],
+    "date": ["deadline0", ...],
+    "assigned": [["member00", "member01", ...], ["member10", ...], ...],
+    "status": ["todo_task0", ...]
+}'
+
+return_type {
+    "res": True/False
+}
+
+```

@@ -1,22 +1,27 @@
 import pika
 import json
-from googleHelper import add_event, is_at_google
+from googleHelper import add_event, is_at_google, delete_event
 
 
 def process_message(ch, method, properties, body):
     
     message = json.loads(body)
-    print(f"[x] Received message: {message}")
+    # print(f"[x] Received message: {message}")
     response = {}
-
+    access_token = message['access_token']
     if message['type'] == 'get_all_assigned_tasks':
         response = {
             # TODO  Добавить генерацию и запрос к сервису.
         }
     elif message['type'] == 'add_event_to_calendar':
-        add_event(message, message['access_token'])
+        print('INFO: add task')
+        add_event(message, access_token)
     elif message['type'] == 'is_event_at_calendar':
-        response = is_at_google(message, message['access_token'])
+        print('INFO: is task in calendar')
+        response = is_at_google(message, access_token)
+    elif message['type'] == 'delete_task':
+        print('INFO: delete task')
+        delete_event(message, access_token)
 
 
     
