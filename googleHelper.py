@@ -73,9 +73,9 @@ def add_event(data, access_token):
     
     response = requests.post(url, headers=headers, json=event_data)
     if response.status_code == 200:
-        print('Событие добавлено успешно!')
+        print('Event added successfully!')
     else:
-        print('Ошибка:', response.json())
+        print('Eroor:', response.json())
 
 
 def delete_event(data, access_token):
